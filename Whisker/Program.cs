@@ -201,7 +201,7 @@ msDS-KeyCredentialLink attribute, effectively adding Shadow Credentials to the t
     [/path:<PATH>]            [add mode] Optional in add mode. Set the path to store the generated self-signed certificate 
                               for authentication. If not provided, the certificate will be printed as a Base64 blob.
 
-    [/vw]                     [add mode] Optional in add mode. Performs the add operation so that it comples with the
+    [/vw]                     [add mode] Optional in add mode. Performs the add operation so that it complies with the
                               restrictions of a validated write. 
                               Warning: This clears the msDS-KeyCredentialLink attribute and could cause disruptions.
 
